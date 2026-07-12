@@ -1,0 +1,21 @@
+# ============================================================================
+# ComBat configuration
+#
+# Define metadata variables representing technical batches.
+# Inspect preprocessing results (PCA, metadata correlations, etc.) before
+# selecting variables.
+#
+# Examples:
+#
+# Single batch variable:
+#   batch_effect: Sentrix_ID
+#
+# Multiple batch variables:
+#   batch_effect: Sentrix_ID,Plate
+#
+# If no batch correction is required:
+#   Set combat.run_combat: false in inflamm_config.yaml
+#
+# ============================================================================
+
+batch_effect: null

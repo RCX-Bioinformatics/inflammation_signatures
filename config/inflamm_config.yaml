@@ -1,0 +1,21 @@
+# ===========================================
+# CONFIG FOR INFLAMMATION SIGNATURES PIPELINE
+# ===========================================
+
+# Input IDAT files.
+dataset:
+  name: "MyDataset"               # name of dataset
+  idat_dir: "/path/to/idats"      # absolute path to IDAT files
+
+# ----------------------------
+# Batch correction options
+# ----------------------------
+combat:
+  run_combat: true
+
+# ----------------------------
+# Top-level working directory
+# All outputs will be organized as subfolders in results folder
+# ----------------------------
+paths:
+  workdir: "/$HOME/inflammation_singatures"
