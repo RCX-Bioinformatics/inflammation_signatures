@@ -65,8 +65,6 @@ run_champ_QC_cat(idat_loaded$beta, idat_loaded$pd, "/raw_data")
 run_champ_QC_cat(meth_bmiq, idat_loaded$pd, "/normalised")
 
 # Perform cell type prediction using EpiDISH
-out.l <- epidish(beta.m = meth_bmiq, ref.m = centEpiFibIC.m, method = "RPC")
-cell_proportions_epidish <- out.l$estF
 cell_proportions_hepidish <- hepidish(beta.m = meth_bmiq, 
                                       ref1.m = centEpiFibIC.m,
                                       ref2.m = centBloodSub.m, 
