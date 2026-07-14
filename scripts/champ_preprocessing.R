@@ -55,8 +55,11 @@ idat_loaded <- champ.load(directory = as.character(parsed_args$idat_dir),
                           filterSNPs = filter_snps)
 
 # Run BMIQ normalisation
-meth_bmiq <- champ.norm(beta=idat_loaded$beta, arraytype="EPIC",
-                        cores = 1, method = "BMIQ", plotBMIQ = TRUE, resultsDir="./CHAMP_Normalization/")
+invisible(capture.output(
+  meth_bmiq <- champ.norm(beta=idat_loaded$beta, arraytype="EPIC",
+  cores = 1, method = "BMIQ", plotBMIQ = TRUE, 
+  resultsDir="./CHAMP_Normalization/")
+  ))
 meth_bmiq <- meth_bmiq[,rownames(idat_loaded$pd)]
 champ.SVD(beta=data.frame(meth_bmiq), pd=idat_loaded$pd, PDFplot = TRUE, resultsDir="./CHAMP_SVDimages/")
 

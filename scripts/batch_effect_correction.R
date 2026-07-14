@@ -21,6 +21,8 @@ cat("  batch_effect: Colname(s) of metadata that will be used to remove batch ef
 cat("  dataset_name: Name of the processed dataset, will be part of output filenames.\n\n")
 cat("  output_dir: Directory where all outputs will be saved. (default = current working directory)\n\n")
 
+output_dir <- ifelse(!is.null(parsed_args$output_dir), parsed_args$output_dir, getwd())
+
 # Ensure top-level output_dir exists and set working directory
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 setwd(output_dir)

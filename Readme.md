@@ -17,7 +17,7 @@ The pipeline consists of two main steps:
 ## 📁 Directory Structure
 
 ```
-epigenetic_ageing_clocks/
+inflammation_signatures/
 ├── config/
 │   ├── inflamm_config.yaml
 │   └── combat_config_template.yaml
@@ -34,10 +34,10 @@ epigenetic_ageing_clocks/
 
 ## 💬 Quick Start
 
+Edit the configuration file (`config/inflamm_config.yaml`) and run:
+
 ```bash
-
-bash run_inflamm.sh
-
+bash run_inflamm.sh config/inflamm_config.yaml
 ```
 
 ---
@@ -83,6 +83,8 @@ make clean
 
 ## Configuration
 
+The pipeline is configured through a YAML configuration file that is passed as an argument to `run_inflamm.sh`.
+
 Edit `config/inflamm_config.yaml` to define (details provided in the config file):
 
 ```yaml
@@ -102,8 +104,10 @@ Batch-effect correction is optional and controlled by the `run_combat` parameter
 
 ## Run
 
+Run the pipeline by specifying the configuration file:
+
 ```bash
-bash run_inflamm.sh
+bash run_inflamm.sh config/inflamm_config.yaml
 ```
 
 This script will:
@@ -153,7 +157,8 @@ $WORKDIR/
 
 - If a dataset has already been processed, delete its `.done` file to re-run that step.
 - When using batch-effect correction, inspect the SVD plots before specifying the batch variable(s) in `combat_config.yaml`.
-- Make sure that `workdir` in YAML configuration file matches the actual repository path.
+- The pipeline reads all settings from the YAML configuration file supplied on the command line.
+- Make sure that `workdir` in the YAML configuration file matches the repository location.
 
 ---
 

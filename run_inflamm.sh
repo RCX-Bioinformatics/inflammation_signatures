@@ -6,7 +6,13 @@ set -o pipefail
 # -----------------------------
 # CONFIG
 # -----------------------------
-CONFIG="/$HOME/inflammation_singatures/config/inflamm_config.yaml"
+CONFIG="$1"
+
+if [[ -z "$CONFIG" ]]; then
+    echo "Usage:"
+    echo "  $0 config.yaml"
+    exit 1
+fi
 
 WORKDIR=$(yq e '.paths.workdir' "$CONFIG")
 SING_IMAGE="$WORKDIR/singularity/champ/champ.sif"
@@ -134,9 +140,9 @@ echo "=================================================="
 echo " Ligthart inflammation signature score calculation"
 echo "=================================================="
 
-DONE_LIGTHART="$RESULTS_DIR/.done_ligthart"
-OUT_CSV="$RESULTS_DIR/Ligthart_inflammation_signature_scores_${name}.csv"
-LOG_FILE="$RESULTS_DIR/Ligthart_inflammation_signature_scores_${name}.log"
+DONE_LIGTHART="$DATASET_DIR/.done_ligthart"
+OUT_CSV="$DATASET_DIR/Ligthart_inflammation_signature_scores_${name}.csv"
+LOG_FILE="$DATASET_DIR/Ligthart_inflammation_signature_scores_${name}.log"
 
 if [[ -f "$DONE_LIGTHART" ]]; then
     echo "Ligthart inflammation signature scores for '$name' already calculated. Skipping."
@@ -160,8 +166,8 @@ echo "=================================================="
 echo " Wielscher inflammation signature score calculation"
 echo "=================================================="
 
-OUT_CSV="$RESULTS_DIR/Wielscher_inflammation_signature_scores_${name}.csv"
-LOG_FILE="$RESULTS_DIR/Wielscher_inflammation_signature_scores_${name}.log"
+OUT_CSV="$DATASET_DIR/Wielscher_inflammation_signature_scores_${name}.csv"
+LOG_FILE="$DATASET_DIR/Wielscher_inflammation_signature_scores_${name}.log"
 
 singularity exec "$SING_IMAGE" Rscript "$WORKDIR/scripts/inflammation_score.R" \
     beta_rds="$BETA_RDS" \
