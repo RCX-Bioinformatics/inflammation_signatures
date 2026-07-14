@@ -1,0 +1,42 @@
+# Stage 1: Base Stage
+Bootstrap: localimage
+From: ../ubuntu22.04_R4.4.1/ubuntu22.04_R4.4.1.sif
+Stage: final
+
+%help
+    This stage installs additional R packages on top of the base image.
+
+%post
+    # Set environment variables for locale
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+
+    # Install necessary dependencies
+    apt-get update && apt-get install -y \
+        liblapack3 \
+        libgsl-dev \
+        liblapack-dev \
+        libhdf5-dev \
+        libharfbuzz-dev \
+        libfribidi-dev \
+        libxt-dev
+
+    Rscript -e 'options(repos="https://cloud.r-project.org")'
+    # Install R packages
+    Rscript -e 'if (!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager", repos="https://cloud.r-project.org")'
+    Rscript -e 'BiocManager::install(version="3.20", ask=FALSE)'
+    # R packages without releases available
+    Rscript -e 'BiocManager::install(c("ChAMP", "sva", "lumi", "EpiDISH"), ask=FALSE, force=TRUE)'
+    # R packages with specified versions
+    Rscript -e 'install.packages("remotes", repos="https://cloud.r-project.org")'
+    Rscript -e 'remotes::install_version("dplyr", version = "{{DPLYR_VERSION}}", repos="https://cloud.r-project.org")'
+    Rscript -e 'remotes::install_version("ggplot2", version = "{{GGPLOT2_VERSION}}", repos="https://cloud.r-project.org")'
+
+%environment
+    export R_HOME=/usr/local/lib/R
+    export PATH=$R_HOME/bin:$PATH
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+
+%runscript
+    exec R "$@"
