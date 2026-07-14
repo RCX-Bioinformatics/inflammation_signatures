@@ -134,7 +134,7 @@ This script will:
   - Quality control
     - SVD plots after batch-effect correction
 
-3. **The Ligthart and Wielscher inflammation signatures** are computed as weighted sums of methylation levels across matched CpG sites using the published effect sizes (`inflammation_score.R`). This step creates the following files inside the `INFLAMM_SIG_results` folder:
+3. **The Ligthart and Wielscher inflammation signatures** are computed as weighted sums of methylation levels across matched CpG sites using the published effect sizes (`inflammation_score.R`). This step creates the following files inside the `INFLAMM_SIG_results/$name` folder:
     - `Ligthart_inflammation_signature_scores_*.csv` 
     - `Ligthart_inflammation_signature_scores_*.log`
     - `Wielscher_inflammation_signature_scores_*.csv` 
@@ -145,10 +145,11 @@ This script will:
 ```
 $WORKDIR/
 └── INFLAMM_SIG_results/
-       ├── preprocessing            # ChAMP preprocessing outputs
-       ├── batch_effect_correction  # batch effect correction results
-       ├── Ligthart_inflammation_signature_scores_*.csv # Ligthart's inflammation signature estimate
-       └── Wielscher_inflammation_signature_scores_*.csv # Wielscher's inflammation signature estimate
+    └── $name/
+          ├── preprocessing            # ChAMP preprocessing outputs
+          ├── batch_effect_correction  # batch effect correction results
+          ├── Ligthart_inflammation_signature_scores_*.csv # Ligthart's inflammation signature estimate
+          └── Wielscher_inflammation_signature_scores_*.csv # Wielscher's inflammation signature estimate
 ```
 ---
 
