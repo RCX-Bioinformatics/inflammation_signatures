@@ -9,30 +9,33 @@ set -o pipefail
 CONFIG="/$HOME/inflammation_singatures/config/inflamm_config.yaml"
 
 WORKDIR=$(yq e '.paths.workdir' "$CONFIG")
-CHAMP_SING_IMAGE="$WORKDIR/singularity/champ/champ.sif"
-RESULTS_DIR="$WORKDIR/INFLAMMATION_results"
+SING_IMAGE="$WORKDIR/singularity/champ/champ.sif"
+RESULTS_DIR="$WORKDIR/INFLAMM_SIG_results"
+COMBAT_TEMPLATE="$WORKDIR/config/combat_config_template.yaml"
 
 name=$(yq e '.dataset.name' "$CONFIG")
 idat_dir=$(yq e '.dataset.idat_dir' "$CONFIG")
-pheno_csv=$(yq e '.dataset.pheno_csv' "$CONFIG")
+RUN_COMBAT=$(yq e '.combat.run_combat // false' "$CONFIG")
+
 DATASET_DIR="$RESULTS_DIR/$name"
 mkdir -p "$DATASET_DIR"
-PREPROCESS_DIR="$DATASET_DIR/preprocessing"
-mkdir -p "$PREPROCESS_DIR"
 
-# -------------------------------------
+
+# --------------------------------------
 # Step 1: Preprocessing methylation data
-# -------------------------------------
+# --------------------------------------
 echo "====================================================================="
 echo " Preprocessing methylation data for inflammation signatures analysis"
 echo "====================================================================="
 
+PREPROCESS_DIR="$DATASET_DIR/preprocessing"
+mkdir -p "$PREPROCESS_DIR"
 DONE_PRE="$PREPROCESS_DIR/.done_preprocessing"
 
 if [[ -f "$DONE_PRE" ]]; then
     echo "Dataset '$name' already preprocessed. Skipping."
 else
-    singularity exec "$CHAMP_SING_IMAGE" Rscript "$WORKDIR/scripts/champ_preprocessing.R" \
+    singularity exec "$SING_IMAGE" Rscript "$WORKDIR/scripts/champ_preprocessing.R" \
         dataset_name="$name" \
         idat_dir="$idat_dir" \
         filter_nonCG=FALSE \
@@ -45,156 +48,126 @@ else
     echo "Dataset '$name' successfully preprocessed."
 fi
 
+
+# --------------------------------------------
+# Create ComBat configuration (first run only)
+# --------------------------------------------
+COMBAT_CONFIG="$DATASET_DIR/combat_config.yaml"
+
+if [[ "$RUN_COMBAT" == "true" && ! -f "$COMBAT_CONFIG" ]]; then
+    cp "$COMBAT_TEMPLATE" "$COMBAT_CONFIG"
+    echo ""
+    echo "Created:"
+    echo "  $COMBAT_CONFIG"
+    echo ""
+    echo "Inspect preprocessing results,"
+    echo "edit batch_effect in this file, and rerun the pipeline."
+    exit 0
+fi
+
+
 # --------------------------------------------
 # Step 2: Remove batch effect if necessary
 # --------------------------------------------
-echo "=============================================="
-echo " Removing batch effect from methylation data"
-echo "=============================================="
+echo "========================"
+echo " Batch effect correction"
+echo "========================"
 
-gs_BMIQ=$(yq e '.gold_standard_BMIQ' "$CONFIG")
-gs=$(yq e '.gold_standard_raw' "$CONFIG")
-COMPLETE_BETAS_DIR=$DATASET_DIR/complete_betas
-mkdir -p "$COMPLETE_BETAS_DIR"
+COMBAT_DIR="$DATASET_DIR/batch_effect_correction"
+mkdir -p "$COMBAT_DIR"
+DONE_COMBAT="$COMBAT_DIR/.done_combat"
 
-# BMIQ normalised beta values
-DONE_BMIQ="$COMPLETE_BETAS_DIR/.done_BMIQ_completion"
-if [[ -f "$DONE_BMIQ" ]]; then
-    echo "BMIQ completion for '$name' already done. Skipping."
+
+if [[ "$RUN_COMBAT" == "false" ]]; then
+    echo "ComBat disabled in configuration. Skipping."
 else
-    echo "Running ref_vals_completion.R for BMIQ-normalized beta values..."
+    batch_effect=$(yq e '.batch_effect' "$COMBAT_CONFIG")
+    if [[ "$batch_effect" == "null" || -z "$batch_effect" ]]; then
+        echo ""
+        echo "ComBat is enabled, but no batch variable has been specified."
+        echo ""
+        echo "If a batch variable is available, edit:"
+        echo "  $COMBAT_CONFIG"
+        echo ""
+        echo "Example:"
+        echo "  batch_effect: Sentrix_ID,Plate"
+        echo ""
+        echo "If no batch effect correction is required,"
+        echo "set in the main config:"
+        echo "  combat:"
+        echo "    run_combat: false"
+        echo ""
+        echo "Then rerun the pipeline."
+        exit 0
+    elif [[ -f "$DONE_COMBAT" ]]; then
+        echo "Batch effect correction for '$name' already done. Skipping."
+    else
+        echo "Running batch_effect_correction.R ..."
+        M_VALUES=$(find "$PREPROCESS_DIR" -type f -name "M_values_*.rds")
+        METADATA=$(find "$PREPROCESS_DIR" -type f -name "champ_metadata_*.rds")
 
-    BMIQ_FILE=$(find "$DATASET_DIR" -type f -name "beta_values_*_BMIQ*.rds")
-    singularity exec "$CHAMP_SING_IMAGE" Rscript "$WORKDIR/scripts/epiclocks/ref_vals_completion.R" \
-        beta_vals="$BMIQ_FILE" \
-        ref_vals="$gs_BMIQ" \
-        output_dir="$COMPLETE_BETAS_DIR"
+        singularity exec "$SING_IMAGE" Rscript "$WORKDIR/scripts/batch_effect_correction.R" \
+            m_vals="$M_VALUES" \
+            champ_metadata="$METADATA" \
+            batch_effect="$batch_effect" \
+            dataset_name="$name" \
+            output_dir="$COMBAT_DIR"
 
-    touch "$DONE_BMIQ"
-    echo "BMIQ-normalised beta values for dataset '$name' successfully completed using reference values from the gold standard dataset."
+        touch "$DONE_COMBAT"
+        echo "Batch effect correction for '$name' successfully completed."
+    fi
 fi
 
-# ----------------------------------------------------
-# Step 3: Estimate individual epigenetic ageing clocks
-# ----------------------------------------------------
-BETA_VALS_BMIQ=$(find "$COMPLETE_BETAS_DIR" -type f -name "beta_values_*_BMIQ*.rds")
-BETA_VALS_BMIQ_CSV=$(find "$COMPLETE_BETAS_DIR" -type f -name "beta_values_*_BMIQ*.csv")
-BETA_VALS_RAW=$(find "$COMPLETE_BETAS_DIR" -type f -name "beta_values_*.rds" ! -name "*_BMIQ*.rds")
-
-echo "========================================="
-echo " Prepare inputs for CheekAge shiny server"
-echo "========================================="
-
-CHEEKAGE_DIR=$DATASET_DIR/cheekage
-mkdir -p "$CHEEKAGE_DIR"
-
-DONE_CHEEKAGE="$CHEEKAGE_DIR/.done_CheekAge"
-if [[ -f "$DONE_CHEEKAGE" ]]; then
-    echo "CheekAge inputs for dataset '$name' already prepared. Skipping."
+# Select beta values for downstream analyses
+if [[ "$RUN_COMBAT" == "true" ]]; then
+    BETA_DIR="$COMBAT_DIR"
 else
-    echo "Running cheekage_input_prep.R for dataset '$name'..."
-
-    singularity exec "$CHAMP_SING_IMAGE" Rscript "$WORKDIR/scripts/epiclocks/cheekage_input_prep.R" \
-        dataset_name="$name" \
-        beta_vals="$BETA_VALS_BMIQ" \
-        samples_in_chunk=13 \
-        output_dir="$CHEEKAGE_DIR"
-
-    touch "$DONE_CHEEKAGE"
-    echo "CheekAge inputs for dataset '$name' successfully prepared. Please upload these inputs to shiny servet at https://cheekage.tallyhealth.com/."
+    BETA_DIR="$PREPROCESS_DIR"
 fi
+BETA_RDS=$(find "$BETA_DIR" -type f -name "beta_values_*.rds" | head -n 1)
+CELLPROP_RDS=$(find "$PREPROCESS_DIR" -type f -name "cell_proportions_*.rds" | head -n 1)
 
+# ---------------------------------------------------------
+# Step 3: Ligthart inflammation signature score calculation
+# ---------------------------------------------------------
+echo "=================================================="
+echo " Ligthart inflammation signature score calculation"
+echo "=================================================="
 
-echo "========================================"
-echo " Compute AltumAge estimate using pyaging"
-echo "========================================"
+DONE_LIGTHART="$RESULTS_DIR/.done_ligthart"
+OUT_CSV="$RESULTS_DIR/Ligthart_inflammation_signature_scores_${name}.csv"
+LOG_FILE="$RESULTS_DIR/Ligthart_inflammation_signature_scores_${name}.log"
 
-ALTUMAGE_DIR=$DATASET_DIR/altumage
-mkdir -p "$ALTUMAGE_DIR"
-
-DONE_ALTUMAGE="$ALTUMAGE_DIR/.done_AltumAge"
-if [[ -f "$DONE_ALTUMAGE" ]]; then
-    echo "AltumAge estimate for dataset '$name' already computed. Skipping."
+if [[ -f "$DONE_LIGTHART" ]]; then
+    echo "Ligthart inflammation signature scores for '$name' already calculated. Skipping."
 else
-    echo "Running pyaging_clocks.py for dataset '$name'..."
+    singularity exec "$SING_IMAGE" Rscript "$WORKDIR/scripts/inflammation_score.R" \
+        beta_rds="$BETA_RDS" \
+        markers_csv="$WORKDIR/data/Ligthart_markers.csv" \
+        cellprop_rds="$CELLPROP_RDS" \
+        out_csv="$OUT_CSV" \
+        log_file="$LOG_FILE"
 
-    singularity exec "$PYAGING_SING_IMAGE" python "$WORKDIR/scripts/epiclocks/pyaging_clocks.py" \
-        $BETA_VALS_BMIQ_CSV \
-        --output pyaging_estimate_"$name".csv \
-        --epicv2 false \
-        --clocks AltumAge \
-        --output_dir "$ALTUMAGE_DIR"
-
-    touch "$DONE_ALTUMAGE"
-    echo "AltumAge estimate for dataset '$name' successfully computed."
-    rm -r $WORKDIR/pyaging_data
-fi
-
-
-echo "==================================="
-echo " Compute Horvath's DNAmAge estimate"
-echo "==================================="
-
-DNAMAGE_DIR=$DATASET_DIR/dnamage
-mkdir -p "$DNAMAGE_DIR"
-
-DONE_DNAMAGE="$DNAMAGE_DIR/.done_DNAmAge"
-if [[ -f "$DONE_DNAMAGE" ]]; then
-    echo "DNAmAge estimate for dataset '$name' already computed. Skipping."
-else
-    echo "Running horvath_dnamage.R for dataset '$name'..."
-
-    singularity exec "$HORVATH_SING_IMAGE" Rscript "$WORKDIR/scripts/epiclocks/horvath_dnamage.R" \
-        beta_vals="$BETA_VALS_RAW" \
-        output_dir="$DNAMAGE_DIR"
-
-    touch "$DONE_DNAMAGE"
-    echo "DNAmAge estimate for dataset '$name' successfully computed."
+    touch "$DONE_LIGTHART"
+    echo "Ligthart inflammation signature scores for '$name' successfully calculated."
 fi
 
 
-echo "==================================="
-echo " Compute GrimAge estimate"
-echo "==================================="
+# ----------------------------------------------------------
+# Step 4: Wielscher inflammation signature score calculation
+# ----------------------------------------------------------
+echo "=================================================="
+echo " Wielscher inflammation signature score calculation"
+echo "=================================================="
 
-GRIMAGE_DIR=$DATASET_DIR/grimage
-mkdir -p "$GRIMAGE_DIR"
+OUT_CSV="$RESULTS_DIR/Wielscher_inflammation_signature_scores_${name}.csv"
+LOG_FILE="$RESULTS_DIR/Wielscher_inflammation_signature_scores_${name}.log"
 
-DONE_GRIMAGE="$GRIMAGE_DIR/.done_GrimAge"
-if [[ -f "$DONE_GRIMAGE" ]]; then
-    echo "GrimAge estimate for dataset '$name' already computed. Skipping."
-else
-    echo "Running grimage.R for dataset '$name'..."
+singularity exec "$SING_IMAGE" Rscript "$WORKDIR/scripts/inflammation_score.R" \
+    beta_rds="$BETA_RDS" \
+    markers_csv="$WORKDIR/data/Wielscher_markers.csv" \
+    cellprop_rds="$CELLPROP_RDS" \
+    out_csv="$OUT_CSV" \
+    log_file="$LOG_FILE"
 
-    singularity exec "$GRIMAGE_SING_IMAGE" Rscript "$WORKDIR/scripts/epiclocks/grimage.R" \
-    beta_vals="$BETA_VALS_BMIQ" \
-    pheno_data="$pheno_csv" \
-    dataset_name="$name" \
-    output_dir="$GRIMAGE_DIR"
-
-    touch "$DONE_GRIMAGE"
-    echo "GrimAge estimate for dataset '$name' successfully computed."
-fi
-
-
-echo "==================================="
-echo " Compute DunedinPACE estimate"
-echo "==================================="
-
-DUNEDINPACE_DIR=$DATASET_DIR/dunedinpace
-mkdir -p "$DUNEDINPACE_DIR"
-
-DONE_DUNEDINPACE="$DUNEDINPACE_DIR/.done_DunedinPACE"
-if [[ -f "$DONE_DUNEDINPACE" ]]; then
-    echo "DunedinPACE estimate for dataset '$name' already computed. Skipping."
-else
-    echo "Running dunedinpace.R for dataset '$name'..."
-
-    singularity exec "$DUNEDINPACE_SING_IMAGE" Rscript "$WORKDIR/scripts/epiclocks/dunedinpace.R" \
-    beta_vals="$BETA_VALS_BMIQ" \
-    dataset_name="$name" \
-    output_dir="$DUNEDINPACE_DIR"
-
-    touch "$DONE_DUNEDINPACE"
-    echo "DunedinPACE estimate for dataset '$name' successfully computed."
-fi
+echo "Wielscher inflammation signature scores for '$name' successfully calculated."
