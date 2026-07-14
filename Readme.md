@@ -32,6 +32,16 @@ epigenetic_ageing_clocks/
 
 ---
 
+## 💬 Quick Start
+
+```bash
+
+bash run_inflamm.sh
+
+```
+
+---
+
 ## ⚙️ Prerequisites
 
 - **Linux environment** with:
@@ -144,16 +154,6 @@ $WORKDIR/
 - If a dataset has already been processed, delete its `.done` file to re-run that step.
 - When using batch-effect correction, inspect the SVD plots before specifying the batch variable(s) in `combat_config.yaml`.
 - Make sure that `workdir` in YAML configuration file matches the actual repository path.
-
----
-
-## 💬 Example Workflow
-
-```bash
-# Estimate inflammation signatures
-bash run_inflamm.sh
-
-```
 
 ---
 
