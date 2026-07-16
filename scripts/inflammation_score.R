@@ -82,6 +82,11 @@ effect_sizes <- markers[
   "Effect"
 ]
 
+# Verify dimensions match (prevent duplicate CpGs in markers)
+if (ncol(methylation_sub) != length(effect_sizes)) {
+  stop("Dimension mismatch: ", ncol(methylation_sub), " methylation columns vs ", length(effect_sizes), " effect sizes")
+}
+
 pers_scores <- as.numeric(as.matrix(methylation_sub) %*% effect_sizes)
 
 cat("PERS summary:\n")
