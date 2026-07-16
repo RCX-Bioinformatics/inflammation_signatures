@@ -89,7 +89,7 @@ if (ncol(methylation_sub) != length(effect_sizes)) {
 
 pers_scores <- as.numeric(crossprod(t(methylation_sub), effect_sizes))
 
-cat("PERS summary:\n")
+cat("Inflammation score summary:\n")
 print(summary(pers_scores))
 cat("\n")
 
@@ -104,8 +104,8 @@ print(dim(cell_prop))
 cat("\n")
 
 inflammation_tab <- data.frame(
-  PERS_raw = pers_scores,
-  PERS_z   = as.numeric(scale(pers_scores)),
+  inflammation_score_raw = pers_scores,
+  inflammation_score_z   = as.numeric(scale(pers_scores)),
   row.names = rownames(methylation_sub)
 )
 
