@@ -18,4 +18,4 @@ combat:
 # All outputs will be organized as subfolders in results folder
 # ----------------------------
 paths:
-  workdir: "/$HOME/inflammation_signatures"
+  workdir: "$HOME/inflammation_signatures"
