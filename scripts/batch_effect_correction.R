@@ -49,6 +49,14 @@ if (length(batch_effect) > 1) {
   saveRDS(metadata, paste0("champ_metadata_", suffix, ".rds"))
 }
 
+# Check number of batches and warn if too many (is really categorical variable)
+batch_factor <- factor(metadata[[batch_colname]])
+n_batches <- nlevels(batch_factor)
+if (n_batches > nrow(metadata) * 0.2) {
+  warning("Batch variable has ", n_batches, " levels - verify this is intended")
+}
+
+
 # Remove -Inf values to run ComBat without error
 cat("Number of M values = -Inf (imputed with the lowest M value available):", sum(mvals_bmiq==(-Inf)), "\n")
 mvals_bmiq[mvals_bmiq==(-Inf)] <- min(mvals_bmiq[mvals_bmiq!=(-Inf)])

@@ -82,9 +82,14 @@ effect_sizes <- markers[
   "Effect"
 ]
 
-pers_scores <- as.numeric(as.matrix(methylation_sub) %*% effect_sizes)
+# Verify dimensions match (prevent duplicate CpGs in markers)
+if (ncol(methylation_sub) != length(effect_sizes)) {
+  stop("Dimension mismatch: ", ncol(methylation_sub), " methylation columns vs ", length(effect_sizes), " effect sizes")
+}
 
-cat("PERS summary:\n")
+pers_scores <- as.numeric(crossprod(t(methylation_sub), effect_sizes))
+
+cat("Inflammation score summary:\n")
 print(summary(pers_scores))
 cat("\n")
 
@@ -99,8 +104,8 @@ print(dim(cell_prop))
 cat("\n")
 
 inflammation_tab <- data.frame(
-  PERS_raw = pers_scores,
-  PERS_z   = as.numeric(scale(pers_scores)),
+  inflammation_score_raw = pers_scores,
+  inflammation_score_z   = as.numeric(scale(pers_scores)),
   row.names = rownames(methylation_sub)
 )
 
@@ -111,8 +116,8 @@ merged_tab <- merge(
   all = TRUE
 )
 
-rownames(merged_tab) <- merged_tab$Row.names
-merged_tab$Row.names <- NULL
+rownames(merged_tab) <- merged_tab$row.names
+merged_tab$row.names <- NULL
 
 merged_tab <- merged_tab[rownames(cell_prop), , drop = FALSE]
 
