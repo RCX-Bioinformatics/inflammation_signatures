@@ -88,7 +88,7 @@ The pipeline is configured through a YAML configuration file that is passed as a
 Edit `config/inflamm_config.yaml` to define (details provided in the config file):
 
 ```yaml
-datasets:
+dataset:
   name: "REF1"
   idat_dir: "/path/to/idats/"
 
