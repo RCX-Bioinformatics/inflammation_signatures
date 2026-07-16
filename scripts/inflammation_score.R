@@ -111,8 +111,8 @@ merged_tab <- merge(
   all = TRUE
 )
 
-rownames(merged_tab) <- merged_tab$Row.names
-merged_tab$Row.names <- NULL
+rownames(merged_tab) <- merged_tab$row.names
+merged_tab$row.names <- NULL
 
 merged_tab <- merged_tab[rownames(cell_prop), , drop = FALSE]
 
