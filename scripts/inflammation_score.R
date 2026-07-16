@@ -52,7 +52,6 @@ markers <- read.csv(
   markers_csv,
   header = TRUE,
   skip = 1,
-  dec = ",",
   stringsAsFactors = FALSE
 )
 cat("Total markers:", nrow(markers), "\n\n")
