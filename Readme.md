@@ -52,7 +52,7 @@ bash run_inflamm.sh config/inflamm_config.yaml
 
 ---
 
-### 🔧 Build Singularity Images
+## 🔧 Build Singularity Images
 
 A single Makefile is provided in the `singularity/` folder to build all containers in the correct order.
 
