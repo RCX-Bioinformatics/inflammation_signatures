@@ -1,0 +1,19 @@
+# ===========================================================
+# CONFIG FOR INFLAMMATION SIGNATURES WITH IMPUTATION PIPELINE
+# ===========================================================
+
+# Input IDAT files.
+dataset:
+  name: "MyDataset"               # name of dataset
+  idat_dir: "/path/to/idats"      # absolute path to IDAT files
+
+# Input RDS file for imputation.
+gold_standard_dataset:
+  rds_file: "/path/to/rds/with/ref/vals.rds"      # absolute path to RDS file with reference values for imputation
+
+# ----------------------------
+# Top-level working directory
+# All outputs will be organized as subfolders in results folder
+# ----------------------------
+paths:
+  workdir: "$HOME/inflammation_signatures"
