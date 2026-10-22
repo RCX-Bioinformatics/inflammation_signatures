@@ -51,7 +51,6 @@ cat("Loading CpG markers...\n")
 markers <- read.csv(
   markers_csv,
   header = TRUE,
-  skip = 1,
   stringsAsFactors = FALSE
 )
 cat("Total markers:", nrow(markers), "\n\n")
@@ -76,10 +75,10 @@ if (length(common_cpgs) == 0) {
 
 methylation_sub <- HBA[, common_cpgs, drop = FALSE]
 
-effect_sizes <- markers[
+effect_sizes <- as.numeric(markers[
   match(common_cpgs, markers$MarkerName),
   "Effect"
-]
+])
 
 # Verify dimensions match (prevent duplicate CpGs in markers)
 if (ncol(methylation_sub) != length(effect_sizes)) {

@@ -10,7 +10,7 @@ CONFIG="$1"
 
 if [[ -z "$CONFIG" ]]; then
     echo "Usage:"
-    echo "  $0 config.yaml"
+    echo "  $0 inflamm_impute_config.yaml"
     exit 1
 fi
 
@@ -52,7 +52,7 @@ else
     touch "$DONE_PRE"
     echo "Dataset '$name' successfully preprocessed."
 fi
-
+CELLPROP_RDS=$(find "$PREPROCESS_DIR" -type f -name "cell_proportions_*.rds" | head -n 1)
 
 # ---------------------------------------------------------
 # Step 3: Imputation of missing values 
@@ -70,7 +70,7 @@ if [[ -f "$DONE_IMPUTE" ]]; then
 else
     BETA_RDS=$(find "$PREPROCESS_DIR" -type f -name "beta_values_*.rds" | head -n 1)
     singularity exec "$SING_IMAGE" Rscript "$WORKDIR/scripts/impute_missing_values.R" \
-        beta_rds="$BETA_RDS" \
+        beta_vals="$BETA_RDS" \
         gold_standard_rds="$rds_file" \
         probes_to_impute="$WORKDIR/data/Wielscher_Ligthart_markers.rds" \
         output_dir="$IMPUTE_DIR"

@@ -29,9 +29,9 @@ output_dir <- ifelse(
 
 # Validate required arguments
 if (is.null(parsed_args$beta_vals) ||
-    is.null(parsed_args$gs_ref_vals) ||
+    is.null(parsed_args$gold_standard_rds) ||
     is.null(parsed_args$probes_to_impute)) {
-  stop("Missing required arguments. Please provide beta_vals, gs_ref_vals, and probes_to_impute.")
+  stop("Missing required arguments. Please provide beta_vals, gold_standard_rds, and probes_to_impute.")
 }
 
 # Check input file suffixes
