@@ -10,6 +10,7 @@ All scripts are executed inside prebuilt **Singularity containers**, ensuring a 
 The pipeline consists of two main steps:
 
 1. **DNA methylation data preprocessing** — DNA methylation data preprocessing is performed using the ChAMP R-package. Cell-type proportions are estimated using the EpiDISH R-package and reference methylation profiles.
+
 2. **Inflammation signatures estimation** — inflammation signature scores are computed as weighted sums of methylation levels across matched CpG sites using the published effect sizes.
 
 ---
@@ -160,6 +161,20 @@ $WORKDIR/
 - When using batch-effect correction, inspect the SVD plots before specifying the batch variable(s) in `combat_config.yaml`.
 - The pipeline reads all settings from the YAML configuration file supplied on the command line.
 - Make sure that `workdir` in the YAML configuration file matches the repository location.
+
+---
+
+## 🧬 Gold Standard Reference Dataset and Imputation
+
+If some CpG sites required for the inflammation signatures are missing from the input methylation data, the `run_inflamm_impute.sh` script can be used to run the imputation workflow. Missing values are supplemented using the gold standard reference dataset, allowing the inflammation signatures to be estimated using additional CpG sites that are unavailable on the original array.
+
+Before running the imputation workflow, update the configuration in `inflamm_impute_config.yaml` to specify the appropriate input paths and settings.
+
+The imputation workflow uses BMIQ-normalised beta values and the corresponding gold standard reference values. It identifies missing CpG sites required by the inflammation signatures and adds those available in the reference dataset to the input beta-value matrix. The imputed beta values are then available for downstream inflammation signature estimation.
+
+**Note:** Imputed values originate from the gold standard reference dataset rather than direct measurements in the input samples. The number of measured and imputed CpG sites should therefore be considered when interpreting the resulting inflammation signature scores.
+
+The gold standard reference dataset can be generated using the pipeline available in the epigenetic_ageing_clocks repository (https://github.com/RCX-Bioinformatics/epigenetic_ageing_clocks).
 
 ---
 
